@@ -1,0 +1,24 @@
+---
+
+- name: Insert/Update DHCP config
+  become: true
+  blockinfile:
+    path: /etc/dhcp/dhcpd.conf
+    marker: "# {mark} ANSIBLE MANAGED BLOCK {{ ocp_cluster_name }}-{{ item.name }}"
+    block: |
+      host {{ ocp_cluster_name }}-{{ item.name }} {
+              option domain-name "{{ ocp_cluster_name }}.{{ ocp_base_domain }}";
+              option domain-name-servers {{ item.nameserver }};
+              hardware ethernet    {{ item.mac }};
+              fixed-address        {{ item.ip }};
+      }
+  with_items:
+    - '{{ openshift_bootstrap }}'
+    - '{{ openshift_masters }}'
+    - '{{ openshift_workers }}'
+
+- name: Restart DHCP server
+  become: true
+  service:
+    name: dhcpd
+    state: restarted
